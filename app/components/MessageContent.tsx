@@ -20,8 +20,15 @@ export function MessageContent({
     const thinkingMatch = content.match(/<thinking>(.*?)<\/thinking>/s);
     const responseMatch = content.match(/<response>(.*?)<\/response>/s);
 
+    // Handle case where response tag is not properly closed
+    const responseMatchUnclosed = content.match(/<response>(.*?)$/s);
+
     const thinkingContent = thinkingMatch ? thinkingMatch[1].trim() : "";
-    const responseContent = responseMatch ? responseMatch[1].trim() : "";
+    const responseContent = responseMatch
+      ? responseMatch[1].trim()
+      : responseMatchUnclosed
+      ? responseMatchUnclosed[1].trim()
+      : "";
 
     // If we have response content but no thinking content, just show the response
     if (responseContent && !thinkingContent) {

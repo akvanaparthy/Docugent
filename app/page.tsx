@@ -322,6 +322,11 @@ export default function Home() {
       const result = await response.json();
 
       if (result.success) {
+        // Update session ID from server response
+        if (result.sessionId) {
+          setSessionId(result.sessionId);
+        }
+
         setChats((prev) =>
           prev.map((chat) =>
             chat.id === newChat.id
@@ -442,6 +447,11 @@ export default function Home() {
       const result = await response.json();
 
       if (result.success) {
+        // Update session ID from server response
+        if (result.sessionId) {
+          setSessionId(result.sessionId);
+        }
+
         setChats((prev) =>
           prev.map((chat) =>
             chat.id === newChat.id
