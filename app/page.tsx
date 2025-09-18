@@ -94,7 +94,20 @@ export default function Home() {
   // Check model status
   const checkModelStatus = async () => {
     try {
-      const response = await fetch("/api/status");
+      // Add cache-busting parameter to prevent cached responses
+      const timestamp = Date.now();
+      const response = await fetch(`/api/status?t=${timestamp}`, {
+        method: "GET",
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
       setIsModelOnline(data.status === "online");
       return data.status === "online";
@@ -655,7 +668,8 @@ export default function Home() {
           </div>
           <button
             onClick={createNewChat}
-            className="w-full flex items-center px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 rounded-lg mb-4"
+            disabled={isModelOnline === false}
+            className="w-full flex items-center px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 rounded-lg mb-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
             <Plus className="h-4 w-4 mr-2" />
             New Chat
@@ -735,14 +749,19 @@ export default function Home() {
                   Welcome to Docugent
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Upload a document or provide a URL to start asking questions
+                  {isModelOnline === false
+                    ? "Model server is offline. Please start LM Studio and try again."
+                    : "Upload a document or provide a URL to start asking questions"}
                 </p>
                 <button
                   onClick={createNewChat}
+                  disabled={isModelOnline === false}
                   className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-500 transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Upload Document
+                  {isModelOnline === false
+                    ? "Model Offline"
+                    : "Upload Document"}
                 </button>
               </div>
             )}
@@ -882,13 +901,19 @@ export default function Home() {
                 value={currentQuery}
                 onChange={(e) => setCurrentQuery(e.target.value)}
                 placeholder={
-                  activeChat?.isProcessing
+                  isModelOnline === false
+                    ? "Model server is offline. Please try again later..."
+                    : activeChat?.isProcessing
                     ? "Docugent is processing your request..."
                     : activeChat?.documentId
                     ? "Message Docugent..."
                     : "Upload a document first to start chatting..."
                 }
-                disabled={!activeChat?.documentId || activeChat?.isProcessing}
+                disabled={
+                  !activeChat?.documentId ||
+                  activeChat?.isProcessing ||
+                  isModelOnline === false
+                }
                 className="w-full px-4 py-3 pr-14 border border-gray-300 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:bg-gray-100 dark:disabled:bg-slate-700 bg-white dark:bg-slate-800 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
                 rows={1}
                 style={{
@@ -924,7 +949,8 @@ export default function Home() {
                 disabled={
                   !currentQuery.trim() ||
                   activeChat?.isProcessing ||
-                  !activeChat?.documentId
+                  !activeChat?.documentId ||
+                  isModelOnline === false
                 }
                 className="send-button absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 bg-blue-500 text-white rounded-xl transition-all duration-200 flex items-center justify-center shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 z-10"
               >
