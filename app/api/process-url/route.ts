@@ -89,7 +89,11 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       // If the first attempt fails with 403, try a simpler request
-      if (axios.isAxiosError(error) && error.response?.status === 403) {
+      if (
+        axios.isAxiosError(error) &&
+        error.response &&
+        error.response.status === 403
+      ) {
         console.log("First attempt failed with 403, trying simpler request...");
         try {
           response = await axios.get(url, {
@@ -132,7 +136,7 @@ export async function POST(request: NextRequest) {
               { status: 408 }
             );
           }
-          if (error.response?.status === 404) {
+          if (error.response && error.response.status === 404) {
             return NextResponse.json(
               {
                 success: false,
@@ -142,7 +146,7 @@ export async function POST(request: NextRequest) {
               { status: 400 }
             );
           }
-          if (error.response?.status === 403) {
+          if (error.response && error.response.status === 403) {
             // Check if it's a Cloudflare challenge
             const responseData = error.response.data || "";
             if (
@@ -169,7 +173,7 @@ export async function POST(request: NextRequest) {
               { status: 400 }
             );
           }
-          if (error.response?.status >= 500) {
+          if (error.response && error.response.status >= 500) {
             return NextResponse.json(
               {
                 success: false,
