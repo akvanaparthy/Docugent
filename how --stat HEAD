@@ -1,0 +1,74 @@
+[33mcommit f63d3fef43d0a8a5b77ddd7ec5c1466d409bf4fe[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Akshay Vanaparthi <Akkie657@users.noreply.github.com>
+Date:   Wed Sep 17 22:04:44 2025 -0400
+
+    feat: Complete ChatGPT-like UI with comprehensive improvements
+    
+     Major Features:
+    - Full ChatGPT-like interface with multi-chat system (max 3 concurrent chats)
+    - Document upload and URL processing directly in chat interface
+    - Real-time typing indicators with smooth animations
+    - Message timestamps and date headers for better context
+    - Dark/light mode toggle with fluid animations
+    - Comprehensive error handling with toast notifications
+    
+     UI/UX Improvements:
+    - User and bot icons for message identification
+    - Dynamic input field with auto-resize and proper scrollbar handling
+    - Send button positioning and hover state fixes
+    - Responsive sidebar with chat history
+    - Modern rounded corners and smooth transitions
+    - Proper color contrast for all text elements
+    
+     Technical Fixes:
+    - Fixed LLM response formatting (markdown, HTML, line breaks)
+    - Resolved incomplete code block rendering (blue bar issue)
+    - Converted backtick-wrapped URLs to clickable links
+    - Implemented model pre-loading to prevent JIT loading
+    - Added request queuing to prevent concurrent interference
+    - Disabled embeddings to use text-based similarity
+    - Enhanced URL fetching with Cloudflare challenge handling
+    
+     Error Handling & Stability:
+    - Comprehensive error boundaries and toast notifications
+    - Graceful fallbacks for failed operations
+    - Server-side document cleanup on chat deletion
+    - Robust API error handling with user-friendly messages
+    - Fixed undici compatibility issues by removing cheerio
+    
+     Performance Optimizations:
+    - Sequential document processing to prevent model conflicts
+    - Model loading state management
+    - Efficient message rendering with proper cleanup
+    - Optimized CSS with custom variables for theming
+    
+     Configuration:
+    - Updated environment variables for LM Studio integration
+    - Model name standardization across all components
+    - Disabled embeddings for simplified operation
+    - Enhanced webpack configuration for compatibility
+
+ DEPLOYMENT.md                         |   69 [32m+[m[31m-[m
+ README.md                             |  112 [32m+[m[31m-[m
+ app/api/cleanup/[documentId]/route.ts |   39 [32m+[m
+ app/api/process-url/route.ts          |  325 [32m+[m[31m-[m
+ app/api/query/route.ts                |  376 [32m+[m[31m-[m
+ app/api/upload/route.ts               |  139 [32m+[m[31m-[m
+ app/components/ErrorBoundary.tsx      |  112 [32m+[m
+ app/components/ErrorToast.tsx         |  201 [32m+[m
+ app/components/MessageContent.tsx     |  134 [32m+[m
+ app/globals.css                       |  597 [32m++[m[31m-[m
+ app/layout.tsx                        |   19 [32m+[m[31m-[m
+ app/page.tsx                          | 1094 [32m++++[m[31m-[m
+ env.example                           |   23 [32m+[m[31m-[m
+ lib/cleanup.ts                        |   32 [32m+[m
+ lib/document-processor.ts             |  459 [32m+[m[31m-[m
+ middleware.ts                         |   36 [32m+[m[31m-[m
+ next.config.js                        |   11 [32m+[m
+ package-lock.json                     | 7928 [32m+++++++++++++++++++++++++++++++++[m
+ package.json                          |   41 [32m+[m[31m-[m
+ scripts/test-local-llm.js             |  125 [32m+[m
+ scripts/test-setup.js                 |    3 [32m+[m[31m-[m
+ tailwind.config.js                    |   17 [32m+[m[31m-[m
+ vercel.json                           |    3 [31m-[m
+ 23 files changed, 11463 insertions(+), 432 deletions(-)
