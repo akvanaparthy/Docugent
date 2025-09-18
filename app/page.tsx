@@ -336,23 +336,9 @@ export default function Home() {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
 
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === newChat.id
-            ? {
-                ...chat,
-                isProcessing: false,
-                messages: [
-                  {
-                    role: "assistant",
-                    content: `Upload failed: ${errorMessage}`,
-                    timestamp: new Date().toISOString(),
-                  },
-                ],
-              }
-            : chat
-        )
-      );
+      // Remove the failed chat instead of keeping it with error message
+      setChats((prev) => prev.filter((chat) => chat.id !== newChat.id));
+      setActiveChatId(null);
 
       // Show user-friendly error message
       if (errorMessage.includes("timeout")) {
@@ -466,23 +452,9 @@ export default function Home() {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
 
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === newChat.id
-            ? {
-                ...chat,
-                isProcessing: false,
-                messages: [
-                  {
-                    role: "assistant",
-                    content: `URL processing failed: ${errorMessage}`,
-                    timestamp: new Date().toISOString(),
-                  },
-                ],
-              }
-            : chat
-        )
-      );
+      // Remove the failed chat instead of keeping it with error message
+      setChats((prev) => prev.filter((chat) => chat.id !== newChat.id));
+      setActiveChatId(null);
 
       // Show user-friendly error message
       if (errorMessage.includes("404")) {

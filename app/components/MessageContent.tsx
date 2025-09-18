@@ -11,11 +11,11 @@ export function MessageContent({
   content,
   isUser = false,
 }: MessageContentProps) {
-  // Check if content contains <thinking> and <response> tags
-  const hasThinkingResponse =
-    content.includes("<thinking>") && content.includes("<response>");
+  // Check if content contains <thinking> and/or <response> tags
+  const hasThinking = content.includes("<thinking>");
+  const hasResponse = content.includes("<response>");
 
-  if (hasThinkingResponse) {
+  if (hasThinking || hasResponse) {
     // Parse thinking and response sections
     const thinkingMatch = content.match(/<thinking>(.*?)<\/thinking>/s);
     const responseMatch = content.match(/<response>(.*?)<\/response>/s);
@@ -23,14 +23,27 @@ export function MessageContent({
     const thinkingContent = thinkingMatch ? thinkingMatch[1].trim() : "";
     const responseContent = responseMatch ? responseMatch[1].trim() : "";
 
+    // If we have response content but no thinking content, just show the response
+    if (responseContent && !thinkingContent) {
+      return (
+        <div
+          className={`prose prose-sm max-w-none ${
+            isUser ? "prose-invert" : ""
+          }`}
+        >
+          {parse(responseContent)}
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-4">
         {thinkingContent && (
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-            <h4 className="text-sm font-semibold text-blue-800 mb-2">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-500 p-4 rounded-r-lg">
+            <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
               💭 Thinking Process:
             </h4>
-            <div className="text-sm text-blue-700">
+            <div className="text-sm text-blue-700 dark:text-blue-300">
               {parse(thinkingContent)}
             </div>
           </div>
