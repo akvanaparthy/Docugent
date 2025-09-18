@@ -86,10 +86,21 @@ export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isModelOnline, setIsModelOnline] = useState<boolean | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { toasts, removeToast, showError, showSuccess, showWarning } =
     useToast();
+
+  // Generate session ID if not exists
+  const getOrCreateSessionId = () => {
+    if (!sessionId) {
+      const newSessionId = crypto.randomUUID();
+      setSessionId(newSessionId);
+      return newSessionId;
+    }
+    return sessionId;
+  };
 
   // Check model status
   const checkModelStatus = async () => {
@@ -227,8 +238,12 @@ export default function Home() {
     // Clean up server-side resources if document exists
     if (chatToDelete?.documentId) {
       try {
+        const currentSessionId = getOrCreateSessionId();
         await fetch(`/api/cleanup/${chatToDelete.documentId}`, {
           method: "DELETE",
+          headers: {
+            "x-session-id": currentSessionId,
+          },
         });
       } catch (error) {
         console.error("Failed to cleanup document:", error);
@@ -291,8 +306,12 @@ export default function Home() {
       const formData = new FormData();
       formData.append("file", file);
 
+      const currentSessionId = getOrCreateSessionId();
       const response = await fetch("/api/upload", {
         method: "POST",
+        headers: {
+          "x-session-id": currentSessionId,
+        },
         body: formData,
       });
 
@@ -406,9 +425,13 @@ export default function Home() {
     setIsProcessing(true);
 
     try {
+      const currentSessionId = getOrCreateSessionId();
       const response = await fetch("/api/process-url", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": currentSessionId,
+        },
         body: JSON.stringify({ url }),
       });
 
@@ -548,9 +571,13 @@ export default function Home() {
     setCurrentQuery("");
 
     try {
+      const currentSessionId = getOrCreateSessionId();
       const response = await fetch("/api/query", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": currentSessionId,
+        },
         body: JSON.stringify({
           query: userMessage.content,
           documentId: activeChat.documentId,

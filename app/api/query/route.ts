@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DocumentProcessor } from "@/lib/document-processor";
 import { loadConfig, makeEndpoint } from "@/lib/config";
+import { getSessionIdFromRequest } from "@/lib/session";
 
 export async function POST(request: NextRequest): Promise<Response> {
   // Queue the request to prevent concurrent processing
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest): Promise<Response> {
 
 async function processQuery(request: NextRequest): Promise<Response> {
   try {
+    // Get session ID from request
+    const sessionId = getSessionIdFromRequest(request);
+
     // Validate request method
     if (request.method !== "POST") {
       return NextResponse.json(
@@ -86,7 +90,12 @@ async function processQuery(request: NextRequest): Promise<Response> {
     let context: string;
     try {
       const processor = new DocumentProcessor();
-      context = await processor.retrieveContext(documentId, query);
+      context = await processor.retrieveContext(
+        documentId,
+        query,
+        5,
+        sessionId
+      );
     } catch (error) {
       console.error("Context retrieval error:", error);
       return NextResponse.json(

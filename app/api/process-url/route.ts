@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import { DocumentProcessor } from "@/lib/document-processor";
+import { getSessionIdFromRequest, generateSessionId } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
   try {
+    // Get or generate session ID
+    let sessionId = getSessionIdFromRequest(request);
+    if (sessionId === "default") {
+      sessionId = generateSessionId();
+    }
+
     // Validate request method
     if (request.method !== "POST") {
       return NextResponse.json(
@@ -61,10 +68,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the webpage content with enhanced error handling
-    let response;
+    let axiosResponse;
     try {
       // First attempt with full browser headers
-      response = await axios.get(url, {
+      axiosResponse = await axios.get(url, {
         timeout: 15000, // Increased timeout
         maxRedirects: 5,
         headers: {
@@ -96,7 +103,7 @@ export async function POST(request: NextRequest) {
       ) {
         console.log("First attempt failed with 403, trying simpler request...");
         try {
-          response = await axios.get(url, {
+          axiosResponse = await axios.get(url, {
             timeout: 10000,
             maxRedirects: 3,
             headers: {
@@ -113,7 +120,7 @@ export async function POST(request: NextRequest) {
       }
 
       // If we still don't have a response, handle the error
-      if (!response) {
+      if (!axiosResponse) {
         console.error("URL fetch error:", error);
 
         if (axios.isAxiosError(error)) {
@@ -195,8 +202,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Ensure we have a valid response
+    if (!axiosResponse) {
+      return NextResponse.json(
+        { success: false, error: "Failed to fetch URL content" },
+        { status: 500 }
+      );
+    }
+
     // Validate response content type
-    const contentType = response.headers["content-type"] || "";
+    const contentType = axiosResponse.headers["content-type"] || "";
     if (!contentType.includes("text/html")) {
       return NextResponse.json(
         {
@@ -209,7 +224,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Simple HTML parsing without cheerio to avoid compatibility issues
-    let htmlContent = response.data;
+    let htmlContent = axiosResponse.data;
     let text = "";
 
     try {
@@ -301,7 +316,7 @@ export async function POST(request: NextRequest) {
     // Process and store the document with error handling
     try {
       const processor = new DocumentProcessor();
-      await processor.processDocument(documentId, text, url);
+      await processor.processDocument(documentId, text, url, sessionId);
     } catch (error) {
       console.error("Document processing error:", error);
       return NextResponse.json(
@@ -313,11 +328,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       documentId,
+      sessionId,
       message: "URL processed successfully",
     });
+
+    // Add session ID to response headers
+    response.headers.set("x-session-id", sessionId);
+    return response;
   } catch (error) {
     console.error("URL processing error:", error);
 

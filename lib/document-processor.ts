@@ -16,17 +16,18 @@ interface DocumentChunk {
 // In production, you'd use a proper vector database like Pinecone, Weaviate, or Vercel's Vector Store
 // Making these global so they persist across different instances and requests
 declare global {
-  var __documentStore: Map<string, DocumentChunk[]> | undefined;
+  var __documentStore: Map<string, Map<string, DocumentChunk[]>> | undefined;
   var __documentMetadata:
-    | Map<string, { source: string; processedAt: Date }>
+    | Map<string, Map<string, { source: string; processedAt: Date }>>
     | undefined;
 }
 
+// Session-based storage: sessionId -> documentId -> data
 const documentStore =
-  globalThis.__documentStore ?? new Map<string, DocumentChunk[]>();
+  globalThis.__documentStore ?? new Map<string, Map<string, DocumentChunk[]>>();
 const documentMetadata =
   globalThis.__documentMetadata ??
-  new Map<string, { source: string; processedAt: Date }>();
+  new Map<string, Map<string, { source: string; processedAt: Date }>>();
 
 // Store references globally to persist across requests
 globalThis.__documentStore = documentStore;
@@ -39,7 +40,8 @@ export class DocumentProcessor {
   async processDocument(
     documentId: string,
     text: string,
-    source: string
+    source: string,
+    sessionId: string = "default"
   ): Promise<void> {
     try {
       // Pre-load model to prevent JIT loading during document processing
@@ -98,9 +100,18 @@ export class DocumentProcessor {
         throw new Error("Failed to generate embeddings for document chunks");
       }
 
-      // Store chunks
-      documentStore.set(documentId, chunksWithEmbeddings);
-      documentMetadata.set(documentId, { source, processedAt: new Date() });
+      // Store chunks with session isolation
+      if (!documentStore.has(sessionId)) {
+        documentStore.set(sessionId, new Map());
+      }
+      if (!documentMetadata.has(sessionId)) {
+        documentMetadata.set(sessionId, new Map());
+      }
+
+      documentStore.get(sessionId)!.set(documentId, chunksWithEmbeddings);
+      documentMetadata
+        .get(sessionId)!
+        .set(documentId, { source, processedAt: new Date() });
 
       console.log(
         `Processed document ${documentId} with ${chunks.length} chunks`
@@ -131,7 +142,8 @@ export class DocumentProcessor {
   async retrieveContext(
     documentId: string,
     query: string,
-    topK: number = 5
+    topK: number = 5,
+    sessionId: string = "default"
   ): Promise<string> {
     try {
       // Validate inputs
@@ -151,16 +163,33 @@ export class DocumentProcessor {
         throw new Error("topK must be between 1 and 20");
       }
 
-      console.log("Retrieving context for documentId:", documentId);
-      console.log("Available documents:", Array.from(documentStore.keys()));
       console.log(
-        "Document metadata keys:",
-        Array.from(documentMetadata.keys())
+        "Retrieving context for documentId:",
+        documentId,
+        "sessionId:",
+        sessionId
+      );
+      console.log("Available sessions:", Array.from(documentStore.keys()));
+
+      const sessionDocuments = documentStore.get(sessionId);
+      if (!sessionDocuments) {
+        console.log("Session not found:", sessionId);
+        throw new Error("Session not found or no documents processed");
+      }
+
+      console.log(
+        "Available documents in session:",
+        Array.from(sessionDocuments.keys())
       );
 
-      const documentChunks = documentStore.get(documentId);
+      const documentChunks = sessionDocuments.get(documentId);
       if (!documentChunks || documentChunks.length === 0) {
-        console.log("Document chunks not found for ID:", documentId);
+        console.log(
+          "Document chunks not found for ID:",
+          documentId,
+          "in session:",
+          sessionId
+        );
         throw new Error("Document not found or not processed");
       }
 
@@ -494,10 +523,18 @@ export class DocumentProcessor {
   }
 
   getDocumentInfo(
-    documentId: string
+    documentId: string,
+    sessionId: string = "default"
   ): { source: string; processedAt: Date; chunkCount: number } | null {
-    const metadata = documentMetadata.get(documentId);
-    const chunks = documentStore.get(documentId);
+    const sessionMetadata = documentMetadata.get(sessionId);
+    const sessionDocuments = documentStore.get(sessionId);
+
+    if (!sessionMetadata || !sessionDocuments) {
+      return null;
+    }
+
+    const metadata = sessionMetadata.get(documentId);
+    const chunks = sessionDocuments.get(documentId);
 
     if (!metadata || !chunks) {
       return null;
@@ -572,7 +609,7 @@ export class DocumentProcessor {
     }
   }
 
-  listDocuments(): Array<{
+  listDocuments(sessionId: string = "default"): Array<{
     documentId: string;
     source: string;
     processedAt: Date;
@@ -585,32 +622,51 @@ export class DocumentProcessor {
       chunkCount: number;
     }> = [];
 
-    documentMetadata.forEach((metadata, documentId) => {
-      const chunks = documentStore.get(documentId);
-      if (chunks) {
-        documents.push({
-          documentId,
-          source: metadata.source,
-          processedAt: metadata.processedAt,
-          chunkCount: chunks.length,
-        });
-      }
-    });
+    const sessionMetadata = documentMetadata.get(sessionId);
+    const sessionDocuments = documentStore.get(sessionId);
+
+    if (sessionMetadata && sessionDocuments) {
+      sessionMetadata.forEach((metadata, documentId) => {
+        const chunks = sessionDocuments.get(documentId);
+        if (chunks) {
+          documents.push({
+            documentId,
+            source: metadata.source,
+            processedAt: metadata.processedAt,
+            chunkCount: chunks.length,
+          });
+        }
+      });
+    }
 
     return documents;
   }
 
-  async cleanupDocument(documentId: string): Promise<void> {
+  async cleanupDocument(
+    documentId: string,
+    sessionId: string = "default"
+  ): Promise<void> {
     try {
-      // Remove document chunks from store
-      documentStore.delete(documentId);
+      // Remove document chunks from session store
+      const sessionDocuments = documentStore.get(sessionId);
+      if (sessionDocuments) {
+        sessionDocuments.delete(documentId);
+      }
 
-      // Remove metadata from store
-      documentMetadata.delete(documentId);
+      // Remove metadata from session store
+      const sessionMetadata = documentMetadata.get(sessionId);
+      if (sessionMetadata) {
+        sessionMetadata.delete(documentId);
+      }
 
-      console.log(`Document ${documentId} cleaned up successfully`);
+      console.log(
+        `Document ${documentId} cleaned up successfully from session ${sessionId}`
+      );
     } catch (error) {
-      console.error(`Failed to cleanup document ${documentId}:`, error);
+      console.error(
+        `Failed to cleanup document ${documentId} from session ${sessionId}:`,
+        error
+      );
       throw error;
     }
   }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DocumentProcessor } from "@/lib/document-processor";
+import { getSessionIdFromRequest } from "@/lib/session";
 
 export async function DELETE(
   request: NextRequest,
@@ -7,6 +8,7 @@ export async function DELETE(
 ) {
   try {
     const { documentId } = params;
+    const sessionId = getSessionIdFromRequest(request);
 
     if (!documentId) {
       return NextResponse.json(
@@ -20,7 +22,7 @@ export async function DELETE(
 
     // Clean up document resources
     const processor = new DocumentProcessor();
-    await processor.cleanupDocument(documentId);
+    await processor.cleanupDocument(documentId, sessionId);
 
     return NextResponse.json({
       success: true,

@@ -3,10 +3,17 @@ import { v4 as uuidv4 } from "uuid";
 import pdf from "pdf-parse";
 import mammoth from "mammoth";
 import { DocumentProcessor } from "@/lib/document-processor";
+import { getSessionIdFromRequest, generateSessionId } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
   try {
     console.log("Upload API called");
+
+    // Get or generate session ID
+    let sessionId = getSessionIdFromRequest(request);
+    if (sessionId === "default") {
+      sessionId = generateSessionId();
+    }
 
     // Validate request method
     if (request.method !== "POST") {
@@ -139,7 +146,7 @@ export async function POST(request: NextRequest) {
     // Process and store the document with error handling
     try {
       const processor = new DocumentProcessor();
-      await processor.processDocument(documentId, text, file.name);
+      await processor.processDocument(documentId, text, file.name, sessionId);
     } catch (error) {
       console.error("Document processing error:", error);
       return NextResponse.json(
@@ -151,11 +158,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       documentId,
+      sessionId,
       message: "Document processed successfully",
     });
+
+    // Add session ID to response headers
+    response.headers.set("x-session-id", sessionId);
+    return response;
   } catch (error) {
     console.error("Upload error:", error);
 
