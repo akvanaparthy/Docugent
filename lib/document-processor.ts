@@ -1,4 +1,5 @@
 // Local LLM integration for embeddings and chat completions
+import { loadConfig, makeEndpoint as makeEp } from "./config";
 
 interface DocumentChunk {
   id: string;
@@ -356,11 +357,10 @@ export class DocumentProcessor {
       );
 
       // Use local LLM for embeddings (same model as chat)
-      const apiKey = process.env.LM_API_KEY || "lmstudio";
-      const baseURLRaw = process.env.LM_BASE_URL || "http://127.0.0.1:1234/v1";
-      const baseURL = baseURLRaw.replace(/\/+$/g, "");
-      const makeEndpoint = (path: string) =>
-        baseURL.endsWith("/v1") ? `${baseURL}${path}` : `${baseURL}/v1${path}`;
+      const cfg = loadConfig();
+      const apiKey = cfg.lm.apiKey;
+      const baseURL = cfg.lm.baseUrl;
+      const endpoint = (path: string) => makeEp(baseURL, path);
       const model =
         process.env.LM_MODEL ||
         "dolphin-2.9.3-mistral-nemo-12b-llamacppfixed:2";
@@ -512,17 +512,16 @@ export class DocumentProcessor {
 
   private async ensureModelLoaded(): Promise<void> {
     try {
-      const apiKey = process.env.LM_API_KEY || "lmstudio";
-      const baseURLRaw = process.env.LM_BASE_URL || "http://127.0.0.1:1234/v1";
-      const baseURL = baseURLRaw.replace(/\/+$/g, "");
-      const makeEndpoint = (path: string) =>
-        baseURL.endsWith("/v1") ? `${baseURL}${path}` : `${baseURL}/v1${path}`;
+      const cfg = loadConfig();
+      const apiKey = cfg.lm.apiKey;
+      const baseURL = cfg.lm.baseUrl;
+      const endpoint = (path: string) => makeEp(baseURL, path);
       const model =
         process.env.LM_MODEL ||
         "dolphin-2.9.3-mistral-nemo-12b-llamacppfixed:2";
 
       // Check if model is already loaded
-      const modelsResponse = await fetch(makeEndpoint("/models"), {
+      const modelsResponse = await fetch(endpoint("/models"), {
         method: "GET",
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -546,7 +545,7 @@ export class DocumentProcessor {
 
       // Trigger model loading with a small request
       console.log(`Pre-loading model ${model} for document processing...`);
-      const loadResponse = await fetch(makeEndpoint("/chat/completions"), {
+      const loadResponse = await fetch(endpoint("/chat/completions"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
