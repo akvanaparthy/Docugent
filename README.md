@@ -1,30 +1,30 @@
 # Docugent - AI Document Assistant
 
-A full-stack application that allows users to upload documents (PDF, DOCX) or provide URLs, and then ask questions about the content using AI.
+A full-stack application that allows users to upload documents (PDF, DOCX) or provide URLs, and then ask questions about the content using a local LLM.
 
 ## Features
 
 - **Document Upload**: Support for PDF and DOCX files
 - **URL Processing**: Extract content from web pages
-- **AI-Powered Q&A**: Ask questions about uploaded documents using OpenAI's GPT models
+- **AI-Powered Q&A**: Ask questions about uploaded documents using local LLM
 - **RAG Implementation**: Retrieval-Augmented Generation for accurate, context-aware responses
 - **Modern UI**: Clean, responsive interface built with Next.js and Tailwind CSS
 
 ## Tech Stack
 
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Vercel AI SDK
-- **AI**: OpenAI GPT-3.5-turbo, OpenAI Embeddings
+- **Backend**: Next.js API Routes
+- **AI**: Local LLM (OpenAI-compatible API, e.g., LM Studio)
 - **File Processing**: pdf-parse, mammoth
-- **Deployment**: Vercel
+- **Deployment**: Vercel (or any Node.js hosting)
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Vercel account with Pro plan
-- OpenAI API key
+- Local LLM server running (e.g., LM Studio, Ollama, or any OpenAI-compatible API)
+- LLM server accessible at `http://127.0.0.1:1234/v1` (or configure your own URL)
 
 ### Installation
 
@@ -47,12 +47,29 @@ npm install
 cp env.example .env.local
 ```
 
-Edit `.env.local` and add your API keys:
+Edit `.env.local` and configure your local LLM settings:
 
 ```
-OPENAI_API_KEY=your_openai_api_key_here
-AI_GATEWAY_API_KEY=your_ai_gateway_api_key_here
+LM_BASE_URL=http://127.0.0.1:1234/v1
+LM_API_KEY=lmstudio
+LM_MODEL=dolphin-2.9.3-mistral-nemo-12b-llamacppfixed
 ```
+
+### Local LLM Setup
+
+This application works with any OpenAI-compatible API. Popular options include:
+
+- **LM Studio**: Easy-to-use GUI for running local models
+- **Ollama**: Command-line tool for running local models
+- **Text Generation WebUI**: Web interface for running models
+- **vLLM**: High-performance inference server
+
+**Benefits of Local LLM**:
+
+- **Privacy**: Your documents never leave your machine
+- **Cost**: No API costs after initial setup
+- **Control**: Full control over model selection and configuration
+- **Offline**: Works without internet connection
 
 ### Local Development
 
@@ -64,54 +81,38 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Deployment on Vercel
+## Deployment
 
-### Method 1: GitHub Integration (Recommended)
+### Local Development
 
-1. Push your code to a GitHub repository
-2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-3. Click "New Project"
-4. Import your GitHub repository
-5. Vercel will automatically detect Next.js and configure the build settings
-6. Add environment variables in the Vercel dashboard:
-   - `OPENAI_API_KEY`
-   - `AI_GATEWAY_API_KEY` (if using Vercel AI Gateway)
-7. Click "Deploy"
-
-### Method 2: Vercel CLI
-
-1. Install Vercel CLI:
+1. Start your local LLM server (e.g., LM Studio)
+2. Ensure it's accessible at the configured URL
+3. Run the development server:
 
 ```bash
-npm i -g vercel
+npm run dev
 ```
 
-2. Login to Vercel:
+### Production Deployment
 
-```bash
-vercel login
-```
+This application can be deployed to any Node.js hosting platform:
 
-3. Deploy:
+- **Vercel**: Easy deployment with automatic builds
+- **Railway**: Simple deployment with environment variables
+- **Render**: Free tier available
+- **DigitalOcean App Platform**: Scalable hosting
+- **Self-hosted**: Run on your own server
 
-```bash
-vercel
-```
-
-4. Add environment variables:
-
-```bash
-vercel env add OPENAI_API_KEY
-vercel env add AI_GATEWAY_API_KEY
-```
+**Note**: For production deployment, you'll need to ensure your local LLM server is accessible from your hosting platform, or use a cloud-based LLM service.
 
 ## Environment Variables
 
-| Variable              | Description                           | Required |
-| --------------------- | ------------------------------------- | -------- |
-| `OPENAI_API_KEY`      | OpenAI API key for GPT and embeddings | Yes      |
-| `AI_GATEWAY_API_KEY`  | Vercel AI Gateway API key             | Optional |
-| `NEXT_PUBLIC_APP_URL` | Public URL of your app                | No       |
+| Variable              | Description                   | Required | Default                    |
+| --------------------- | ----------------------------- | -------- | -------------------------- |
+| `LM_BASE_URL`         | Base URL for local LLM server | Yes      | `http://127.0.0.1:1234/v1` |
+| `LM_API_KEY`          | API key for local LLM         | No       | `lmstudio`                 |
+| `LM_MODEL`            | Model name/label              | Yes      | `dolphin-2.9.3-mistral...` |
+| `NEXT_PUBLIC_APP_URL` | Public URL of your app        | No       | `http://localhost:3000`    |
 
 ## API Endpoints
 
@@ -191,25 +192,26 @@ Ask questions about processed documents.
 
 The application uses Retrieval-Augmented Generation (RAG) to provide accurate answers:
 
-1. User query is embedded using OpenAI's embedding model
+1. User query is embedded using the local LLM's embedding model
 2. Similarity search finds relevant document chunks
 3. Context is combined with the query
-4. GPT-3.5-turbo generates a response based on the context
+4. Local LLM generates a response based on the context
 
-## Vercel Pro Plan Features
+## Local LLM Features
 
-This application leverages several Vercel Pro plan features:
+This application is designed to work with local LLMs:
 
-- **Extended Function Duration**: 30-second timeout for document processing
-- **AI Gateway**: Centralized AI model access and management
-- **Enhanced Analytics**: Monitor usage and performance
-- **Priority Support**: Faster deployment and issue resolution
+- **Privacy-First**: All processing happens locally
+- **Cost-Effective**: No ongoing API costs
+- **Customizable**: Use any model that fits your needs
+- **Offline Capable**: Works without internet connection
 
 ## Limitations
 
 - **In-Memory Storage**: Document storage is currently in-memory and will reset on deployment
-- **File Size Limits**: Vercel has a 10MB limit for serverless functions
+- **File Size Limits**: 10MB limit for file uploads
 - **Processing Time**: Large documents may take time to process
+- **Local LLM Dependency**: Requires a local LLM server to be running
 
 ## Future Enhancements
 

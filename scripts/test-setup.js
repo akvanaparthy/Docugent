@@ -43,7 +43,6 @@ const requiredDeps = [
   "react-dom",
   "ai",
   "@ai-sdk/openai",
-  "openai",
   "pdf-parse",
   "mammoth",
   "cheerio",
@@ -83,7 +82,7 @@ if (allFilesExist) {
   console.log("🎉 Setup looks good! Ready for deployment.");
   console.log("\nNext steps:");
   console.log("1. Copy env.example to .env.local");
-  console.log("2. Add your OpenAI API key to .env.local");
+  console.log("2. Add your Vercel AI Gateway API key to .env.local");
   console.log("3. Run: npm install");
   console.log("4. Run: npm run dev (for local testing)");
   console.log("5. Deploy to Vercel following DEPLOYMENT.md");

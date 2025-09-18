@@ -1,0 +1,134 @@
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import parse from "html-react-parser";
+
+interface MessageContentProps {
+  content: string;
+  isUser?: boolean;
+}
+
+export function MessageContent({
+  content,
+  isUser = false,
+}: MessageContentProps) {
+  // Check if content contains <thinking> and <response> tags
+  const hasThinkingResponse =
+    content.includes("<thinking>") && content.includes("<response>");
+
+  if (hasThinkingResponse) {
+    // Parse thinking and response sections
+    const thinkingMatch = content.match(/<thinking>(.*?)<\/thinking>/s);
+    const responseMatch = content.match(/<response>(.*?)<\/response>/s);
+
+    const thinkingContent = thinkingMatch ? thinkingMatch[1].trim() : "";
+    const responseContent = responseMatch ? responseMatch[1].trim() : "";
+
+    return (
+      <div className="space-y-4">
+        {thinkingContent && (
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+            <h4 className="text-sm font-semibold text-blue-800 mb-2">
+              💭 Thinking Process:
+            </h4>
+            <div className="text-sm text-blue-700">
+              {parse(thinkingContent)}
+            </div>
+          </div>
+        )}
+
+        {responseContent && (
+          <div
+            className={`prose prose-sm max-w-none ${
+              isUser ? "prose-invert" : ""
+            }`}
+          >
+            {parse(responseContent)}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Clean up the content - replace escaped newlines with actual newlines
+  let cleanedContent = content.replace(/\\n/g, "\n");
+
+  // Remove incomplete code blocks (triple backticks without proper closing)
+  cleanedContent = cleanedContent
+    .replace(/```\s*$/, "") // Remove trailing ```
+    .replace(/```\s*\n$/, "") // Remove trailing ``` with newline
+    .replace(/```\s*$/, "") // Remove any remaining trailing ```
+    .trim(); // Remove any trailing whitespace
+
+  // Convert URLs in backticks to proper markdown links
+  // This handles cases like `https://github.com/` -> [https://github.com/](https://github.com/)
+  cleanedContent = cleanedContent.replace(
+    /`(https?:\/\/[^\s`]+)`/g,
+    "[$1]($1)"
+  );
+
+  // If no special tags, check if it contains actual HTML tags (not markdown)
+  // Look for proper HTML tags, not just < and > characters
+  const hasHtmlTags =
+    /<[a-zA-Z][^>]*>.*?<\/[a-zA-Z][^>]*>/.test(cleanedContent) ||
+    /<[a-zA-Z][^>]*\/>/.test(cleanedContent);
+
+  if (hasHtmlTags) {
+    return (
+      <div
+        className={`prose prose-sm max-w-none ${isUser ? "prose-invert" : ""}`}
+      >
+        {parse(cleanedContent)}
+      </div>
+    );
+  }
+
+  // Default to markdown rendering for all other content
+  return (
+    <div
+      className={`prose prose-sm max-w-none ${isUser ? "prose-invert" : ""}`}
+    >
+      <ReactMarkdown
+        remarkPlugins={[remarkBreaks]}
+        components={{
+          // Let CSS variables handle all styling
+          p: ({ children }) => <p>{children}</p>,
+          strong: ({ children }) => <strong>{children}</strong>,
+          em: ({ children }) => <em>{children}</em>,
+          ul: ({ children }) => <ul>{children}</ul>,
+          ol: ({ children }) => <ol>{children}</ol>,
+          li: ({ children }) => <li>{children}</li>,
+          h1: ({ children }) => <h1>{children}</h1>,
+          h2: ({ children }) => <h2>{children}</h2>,
+          h3: ({ children }) => <h3>{children}</h3>,
+          h4: ({ children }) => <h4>{children}</h4>,
+          h5: ({ children }) => <h5>{children}</h5>,
+          h6: ({ children }) => <h6>{children}</h6>,
+          blockquote: ({ children }) => <blockquote>{children}</blockquote>,
+          code: ({ children }) => <code>{children}</code>,
+          pre: ({ children }) => {
+            // Filter out empty or whitespace-only pre elements
+            const content = children?.toString() || "";
+            if (!content.trim()) {
+              return null;
+            }
+            return <pre>{children}</pre>;
+          },
+          a: ({ href, children }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline transition-colors duration-200"
+            >
+              {children}
+            </a>
+          ),
+          hr: () => <hr />,
+          br: () => <br />,
+        }}
+      >
+        {cleanedContent}
+      </ReactMarkdown>
+    </div>
+  );
+}

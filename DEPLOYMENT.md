@@ -1,12 +1,12 @@
 # Deployment Guide for Docugent
 
-This guide will walk you through deploying Docugent to Vercel using your Pro plan.
+This guide will walk you through deploying Docugent with local LLM support.
 
 ## Prerequisites
 
-- Vercel Pro account
+- Node.js 18+
+- Local LLM server (e.g., LM Studio, Ollama)
 - GitHub repository with your code
-- OpenAI API key
 - Basic understanding of environment variables
 
 ## Step-by-Step Deployment
@@ -59,10 +59,11 @@ docugent/
 4. **Environment Variables**
    Add the following environment variables in the Vercel dashboard:
 
-   | Name                 | Value                                 | Environment                      |
-   | -------------------- | ------------------------------------- | -------------------------------- |
-   | `OPENAI_API_KEY`     | Your OpenAI API key                   | Production, Preview, Development |
-   | `AI_GATEWAY_API_KEY` | Your Vercel AI Gateway key (optional) | Production, Preview, Development |
+   | Name          | Value                       | Environment                      |
+   | ------------- | --------------------------- | -------------------------------- |
+   | `LM_BASE_URL` | Your local LLM server URL   | Production, Preview, Development |
+   | `LM_API_KEY`  | API key for your LLM server | Production, Preview, Development |
+   | `LM_MODEL`    | Model name/label            | Production, Preview, Development |
 
 5. **Deploy**
    - Click "Deploy"
@@ -92,8 +93,9 @@ docugent/
 4. **Add Environment Variables**
 
    ```bash
-   vercel env add OPENAI_API_KEY
-   vercel env add AI_GATEWAY_API_KEY
+   vercel env add LM_BASE_URL
+   vercel env add LM_API_KEY
+   vercel env add LM_MODEL
    ```
 
 5. **Redeploy**
@@ -101,25 +103,26 @@ docugent/
    vercel --prod
    ```
 
-### 3. Configure Vercel AI Gateway (Optional)
+### 3. Configure Local LLM Server
 
-If you want to use Vercel AI Gateway for better model management:
+Set up your local LLM server:
 
-1. **Enable AI Gateway**
+1. **Install LM Studio** (Recommended)
 
-   - Go to your project settings in Vercel
-   - Navigate to "AI Gateway" section
-   - Enable AI Gateway for your project
+   - Download from [lmstudio.ai](https://lmstudio.ai)
+   - Install and launch the application
+   - Download a compatible model (e.g., Dolphin, Mistral, Llama)
 
-2. **Configure Models**
+2. **Start the Server**
 
-   - Add OpenAI as a provider
-   - Set up rate limiting and caching
-   - Copy the AI Gateway API key
+   - In LM Studio, go to "Local Server" tab
+   - Click "Start Server"
+   - Note the server URL (usually `http://127.0.0.1:1234`)
 
-3. **Update Environment Variables**
-   - Add `AI_GATEWAY_API_KEY` to your environment variables
-   - The app will automatically use AI Gateway when available
+3. **Configure Environment Variables**
+   - Set `LM_BASE_URL` to your server URL + `/v1`
+   - Set `LM_MODEL` to your model name
+   - Set `LM_API_KEY` to any value (LM Studio usually ignores this)
 
 ### 4. Test Your Deployment
 
@@ -157,11 +160,11 @@ If you want to use Vercel AI Gateway for better model management:
    - Consider implementing progress indicators
    - Optimize text chunking for better performance
 
-3. **API Key Issues**
+3. **LLM Server Issues**
 
-   - Verify environment variables are set correctly
-   - Check that API keys have sufficient credits
-   - Ensure keys are added to all environments (Production, Preview, Development)
+   - Verify `LM_BASE_URL` environment variable is set correctly
+   - Ensure your local LLM server is running and accessible
+   - Check that the model name in `LM_MODEL` matches your server
 
 4. **File Upload Issues**
    - Check file size limits (10MB for Vercel)
@@ -190,11 +193,11 @@ If you want to use Vercel AI Gateway for better model management:
 
 ### Security
 
-1. **API Key Management**
+1. **LLM Server Management**
 
-   - Never commit API keys to version control
-   - Use Vercel's environment variable system
-   - Rotate keys regularly
+   - Ensure your local LLM server is properly configured
+   - Use environment variables for configuration
+   - Consider using a cloud-based LLM service for production
 
 2. **Input Validation**
 
@@ -239,8 +242,8 @@ After successful deployment:
 
 ## Support
 
-- **Vercel Documentation**: [vercel.com/docs](https://vercel.com/docs)
-- **AI SDK Documentation**: [sdk.vercel.ai](https://sdk.vercel.ai)
-- **OpenAI Documentation**: [platform.openai.com/docs](https://platform.openai.com/docs)
+- **LM Studio Documentation**: [lmstudio.ai/docs](https://lmstudio.ai/docs)
+- **Ollama Documentation**: [ollama.ai/docs](https://ollama.ai/docs)
+- **Next.js Documentation**: [nextjs.org/docs](https://nextjs.org/docs)
 
 For issues specific to this project, check the GitHub repository issues or create a new one.
