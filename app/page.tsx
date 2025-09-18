@@ -18,6 +18,7 @@ import {
 import { MessageContent } from "./components/MessageContent";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastContainer, useToast } from "./components/ErrorToast";
+import { StatusIndicator } from "./components/StatusIndicator";
 
 // Utility functions for timestamps
 const formatTimestamp = (timestamp: string) => {
@@ -84,10 +85,25 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"upload" | "url">("upload");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isModelOnline, setIsModelOnline] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { toasts, removeToast, showError, showSuccess, showWarning } =
     useToast();
+
+  // Check model status
+  const checkModelStatus = async () => {
+    try {
+      const response = await fetch("/api/status");
+      const data = await response.json();
+      setIsModelOnline(data.status === "online");
+      return data.status === "online";
+    } catch (error) {
+      console.error("Failed to check model status:", error);
+      setIsModelOnline(false);
+      return false;
+    }
+  };
 
   const activeChat = chats.find((chat) => chat.id === activeChatId);
 
@@ -167,9 +183,24 @@ export default function Home() {
     }
   }, [currentQuery]);
 
-  const createNewChat = () => {
+  // Initial model status check
+  useEffect(() => {
+    checkModelStatus();
+  }, []);
+
+  const createNewChat = async () => {
     if (chats.length >= 3) {
       setShowDeleteModal(true);
+      return;
+    }
+
+    // Check if model is online before allowing new chat creation
+    const isOnline = await checkModelStatus();
+    if (!isOnline) {
+      showError(
+        "Model Offline",
+        "Cannot create new chats while the AI model server is offline."
+      );
       return;
     }
 
@@ -491,6 +522,16 @@ export default function Home() {
     if (!currentQuery.trim() || !activeChat?.documentId || !activeChatId)
       return;
 
+    // Check if model is online
+    const isOnline = await checkModelStatus();
+    if (!isOnline) {
+      showError(
+        "Model Offline",
+        "The AI model server is currently offline. Please try again later."
+      );
+      return;
+    }
+
     // Check if any chat is currently processing
     const isAnyChatProcessing = chats.some((chat) => chat.isProcessing);
     if (isAnyChatProcessing) {
@@ -666,7 +707,8 @@ export default function Home() {
               {activeChat?.title || "Docugent"}
             </h1>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
+            <StatusIndicator />
             <button
               onClick={toggleDarkMode}
               disabled={isAnimating}
