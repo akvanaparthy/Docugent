@@ -356,32 +356,28 @@ async function loadModel(): Promise<void> {
 
     console.log(`Pre-loading model: ${model}`);
 
-    // Check if model is already loaded
-    const modelsResponse = await fetch(endpoint("/models"), {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (modelsResponse.ok) {
-      const modelsData = await modelsResponse.json();
-      const availableModelIds: string[] =
-        modelsData.data?.map((m: any) => m.id) || [];
-      const selectedModelId = getSelectedModelId(availableModelIds) || model;
-      activeModelId = selectedModelId;
-      const isModelAlreadyLoaded = availableModelIds.includes(selectedModelId);
-
-      if (isModelAlreadyLoaded) {
-        console.log(`Model ${selectedModelId} is already loaded`);
-        isModelLoaded = true;
-        return;
+    // Resolve a model id once (only hit /models if we haven't chosen yet)
+    if (!activeModelId) {
+      const modelsResponse = await fetch(endpoint("/models"), {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (modelsResponse.ok) {
+        const modelsData = await modelsResponse.json();
+        const availableModelIds: string[] =
+          modelsData.data?.map((m: any) => m.id) || [];
+        activeModelId = getSelectedModelId(availableModelIds) || model;
+      } else {
+        // Fall back to configured model if listing fails
+        activeModelId = model;
       }
     }
 
     // Trigger model loading with a small request
-    console.log(`Loading model ${model}...`);
+    console.log(`Loading model ${activeModelId || model}...`);
     const loadResponse = await fetch(endpoint("/chat/completions"), {
       method: "POST",
       headers: {
