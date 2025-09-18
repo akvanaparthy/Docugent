@@ -3,11 +3,8 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ["pdf-parse", "mammoth"],
   },
-  api: {
-    bodyParser: {
-      sizeLimit: "10mb",
-    },
-  },
+  // Note: bodyParser config is not needed for App Router
+  // File upload limits are handled in the API routes directly
   // Enable serverless functions for Vercel
   output: "standalone",
   webpack: (config, { isServer }) => {

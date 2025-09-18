@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { DocumentProcessor } from "@/lib/document-processor";
 import { loadConfig, makeEndpoint } from "@/lib/config";
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   // Queue the request to prevent concurrent processing
-  return new Promise((resolve, reject) => {
+  return new Promise<Response>((resolve, reject) => {
     requestQueue.push(async () => {
       try {
         const result = await processQuery(request);
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   });
 }
 
-async function processQuery(request: NextRequest) {
+async function processQuery(request: NextRequest): Promise<Response> {
   try {
     // Validate request method
     if (request.method !== "POST") {
