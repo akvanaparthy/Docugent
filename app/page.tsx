@@ -16,7 +16,7 @@ import {
   Sun,
 } from "lucide-react";
 import { MessageContent } from "./components/MessageContent";
-import { ErrorBoundary } from "./components/ErrorBoundary";
+// import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastContainer, useToast } from "./components/ErrorToast";
 import { StatusIndicator } from "./components/StatusIndicator";
 
@@ -89,8 +89,7 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { toasts, removeToast, showError, showSuccess, showWarning } =
-    useToast();
+  const { toasts, removeToast, showError, showSuccess } = useToast();
 
   // Generate session ID if not exists
   const getOrCreateSessionId = () => {
@@ -210,6 +209,30 @@ export default function Home() {
   // Initial model status check
   useEffect(() => {
     checkModelStatus();
+  }, []);
+
+  // Cleanup on page unload/refresh (only when actually leaving)
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      const currentSessionId = getOrCreateSessionId();
+      if (currentSessionId && currentSessionId !== "default") {
+        // Use sendBeacon for reliable cleanup on page unload
+        try {
+          navigator.sendBeacon(
+            "/api/cleanup-session",
+            JSON.stringify({ sessionId: currentSessionId })
+          );
+        } catch (error) {
+          console.error("Failed to cleanup session on unload:", error);
+        }
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
   }, []);
 
   const createNewChat = async () => {
@@ -595,6 +618,7 @@ export default function Home() {
       });
 
       const result = await response.json();
+
       if (result.success) {
         setChats((prev) =>
           prev.map((chat) =>

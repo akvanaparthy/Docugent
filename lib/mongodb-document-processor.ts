@@ -1,4 +1,5 @@
-// Local LLM integration for embeddings and chat completions
+import { Collection } from "mongodb";
+import { connectToDatabase } from "./mongodb";
 import { loadConfig, makeEndpoint as makeEp } from "./config";
 
 interface DocumentChunk {
@@ -9,35 +10,32 @@ interface DocumentChunk {
     documentId: string;
     chunkIndex: number;
     source: string;
+    sessionId: string;
   };
 }
 
-// In-memory storage for demo purposes
-// In production, you'd use a proper vector database like Pinecone, Weaviate, or Vercel's Vector Store
-// Making these global so they persist across different instances and requests
-declare global {
-  // eslint-disable-next-line no-var
-  var __documentStore: Map<string, Map<string, DocumentChunk[]>> | undefined;
-  // eslint-disable-next-line no-var
-  var __documentMetadata:
-    | Map<string, Map<string, { source: string; processedAt: Date }>>
-    | undefined;
+interface DocumentMetadata {
+  documentId: string;
+  sessionId: string;
+  source: string;
+  processedAt: Date;
+  chunkCount: number;
 }
 
-// Session-based storage: sessionId -> documentId -> data
-const documentStore =
-  globalThis.__documentStore ?? new Map<string, Map<string, DocumentChunk[]>>();
-const documentMetadata =
-  globalThis.__documentMetadata ??
-  new Map<string, Map<string, { source: string; processedAt: Date }>>();
-
-// Store references globally to persist across requests
-globalThis.__documentStore = documentStore;
-globalThis.__documentMetadata = documentMetadata;
-
-export class DocumentProcessor {
+export class MongoDocumentProcessor {
   private readonly chunkSize = 1000;
   private readonly chunkOverlap = 200;
+
+  private async getCollections(): Promise<{
+    documents: Collection<DocumentChunk>;
+    metadata: Collection<DocumentMetadata>;
+  }> {
+    const db = await connectToDatabase();
+    return {
+      documents: db.collection<DocumentChunk>("documents"),
+      metadata: db.collection<DocumentMetadata>("metadata"),
+    };
+  }
 
   async processDocument(
     documentId: string,
@@ -72,7 +70,7 @@ export class DocumentProcessor {
       }
 
       console.log(
-        `Processing document ${documentId} with ${text.length} characters`
+        `Processing document ${documentId} with ${text.length} characters for session ${sessionId}`
       );
 
       // Clean and preprocess text
@@ -95,44 +93,38 @@ export class DocumentProcessor {
       const chunksWithEmbeddings = await this.generateEmbeddings(
         chunks,
         documentId,
-        source
+        source,
+        sessionId
       );
 
       if (chunksWithEmbeddings.length === 0) {
         throw new Error("Failed to generate embeddings for document chunks");
       }
 
-      // Store chunks with session isolation
-      if (!documentStore.has(sessionId)) {
-        documentStore.set(sessionId, new Map());
-      }
-      if (!documentMetadata.has(sessionId)) {
-        documentMetadata.set(sessionId, new Map());
-      }
+      // Get MongoDB collections
+      const { documents, metadata } = await this.getCollections();
 
-      documentStore.get(sessionId)!.set(documentId, chunksWithEmbeddings);
-      documentMetadata
-        .get(sessionId)!
-        .set(documentId, { source, processedAt: new Date() });
+      // Store chunks in MongoDB
+      await documents.insertMany(chunksWithEmbeddings);
+
+      // Store metadata
+      await metadata.insertOne({
+        documentId,
+        sessionId,
+        source,
+        processedAt: new Date(),
+        chunkCount: chunksWithEmbeddings.length,
+      });
 
       console.log(
-        `Processed document ${documentId} with ${chunks.length} chunks`
-      );
-      console.log(
-        "Document stored successfully. Total documents:",
-        documentStore.size
-      );
-      console.log(
-        "Document metadata stored. Total metadata entries:",
-        documentMetadata.size
+        `Processed document ${documentId} with ${chunks.length} chunks for session ${sessionId}`
       );
     } catch (error) {
       console.error("Error processing document:", error);
 
       // Clean up any partial data
       try {
-        documentStore.delete(documentId);
-        documentMetadata.delete(documentId);
+        await this.cleanupDocument(documentId, sessionId);
       } catch (cleanupError) {
         console.error("Error during cleanup:", cleanupError);
       }
@@ -171,20 +163,29 @@ export class DocumentProcessor {
         "sessionId:",
         sessionId
       );
-      console.log("Available sessions:", Array.from(documentStore.keys()));
 
-      const sessionDocuments = documentStore.get(sessionId);
-      if (!sessionDocuments) {
-        console.log("Session not found:", sessionId);
-        throw new Error("Session not found or no documents processed");
+      // Get MongoDB collections
+      const { documents, metadata } = await this.getCollections();
+
+      // Check if document exists for this session
+      const docMetadata = await metadata.findOne({
+        documentId,
+        sessionId,
+      });
+
+      if (!docMetadata) {
+        console.log("Document not found for session:", sessionId);
+        throw new Error("Document not found or not processed");
       }
 
-      console.log(
-        "Available documents in session:",
-        Array.from(sessionDocuments.keys())
-      );
+      // Get document chunks for this session
+      const documentChunks = await documents
+        .find({
+          "metadata.documentId": documentId,
+          "metadata.sessionId": sessionId,
+        })
+        .toArray();
 
-      const documentChunks = sessionDocuments.get(documentId);
       if (!documentChunks || documentChunks.length === 0) {
         console.log(
           "Document chunks not found for ID:",
@@ -306,7 +307,8 @@ export class DocumentProcessor {
   private async generateEmbeddings(
     chunks: string[],
     documentId: string,
-    source: string
+    source: string,
+    sessionId: string
   ): Promise<DocumentChunk[]> {
     const chunksWithEmbeddings: DocumentChunk[] = [];
 
@@ -328,6 +330,7 @@ export class DocumentProcessor {
             documentId,
             chunkIndex: i,
             source,
+            sessionId,
           },
         });
       }
@@ -348,6 +351,7 @@ export class DocumentProcessor {
           documentId,
           chunkIndex: i,
           source,
+          sessionId,
         },
       });
     }
@@ -362,8 +366,6 @@ export class DocumentProcessor {
         console.log("Embeddings disabled, using text-based similarity");
         return this.createTextBasedEmbedding(text);
       }
-
-      // Skip model loading since embeddings are disabled
 
       // Validate input
       if (!text || typeof text !== "string") {
@@ -526,26 +528,23 @@ export class DocumentProcessor {
   getDocumentInfo(
     documentId: string,
     sessionId: string = "default"
-  ): { source: string; processedAt: Date; chunkCount: number } | null {
-    const sessionMetadata = documentMetadata.get(sessionId);
-    const sessionDocuments = documentStore.get(sessionId);
+  ): Promise<{ source: string; processedAt: Date; chunkCount: number } | null> {
+    return this.getCollections().then(async ({ metadata }) => {
+      const docMetadata = await metadata.findOne({
+        documentId,
+        sessionId,
+      });
 
-    if (!sessionMetadata || !sessionDocuments) {
-      return null;
-    }
+      if (!docMetadata) {
+        return null;
+      }
 
-    const metadata = sessionMetadata.get(documentId);
-    const chunks = sessionDocuments.get(documentId);
-
-    if (!metadata || !chunks) {
-      return null;
-    }
-
-    return {
-      source: metadata.source,
-      processedAt: metadata.processedAt,
-      chunkCount: chunks.length,
-    };
+      return {
+        source: docMetadata.source,
+        processedAt: docMetadata.processedAt,
+        chunkCount: docMetadata.chunkCount,
+      };
+    });
   }
 
   private async ensureModelLoaded(): Promise<void> {
@@ -610,37 +609,27 @@ export class DocumentProcessor {
     }
   }
 
-  listDocuments(sessionId: string = "default"): Array<{
-    documentId: string;
-    source: string;
-    processedAt: Date;
-    chunkCount: number;
-  }> {
-    const documents: Array<{
+  listDocuments(sessionId: string = "default"): Promise<
+    Array<{
       documentId: string;
       source: string;
       processedAt: Date;
       chunkCount: number;
-    }> = [];
+    }>
+  > {
+    return this.getCollections().then(async ({ metadata }) => {
+      const documents = await metadata
+        .find({ sessionId })
+        .sort({ processedAt: -1 })
+        .toArray();
 
-    const sessionMetadata = documentMetadata.get(sessionId);
-    const sessionDocuments = documentStore.get(sessionId);
-
-    if (sessionMetadata && sessionDocuments) {
-      sessionMetadata.forEach((metadata, documentId) => {
-        const chunks = sessionDocuments.get(documentId);
-        if (chunks) {
-          documents.push({
-            documentId,
-            source: metadata.source,
-            processedAt: metadata.processedAt,
-            chunkCount: chunks.length,
-          });
-        }
-      });
-    }
-
-    return documents;
+      return documents.map((doc) => ({
+        documentId: doc.documentId,
+        source: doc.source,
+        processedAt: doc.processedAt,
+        chunkCount: doc.chunkCount,
+      }));
+    });
   }
 
   async cleanupDocument(
@@ -648,17 +637,20 @@ export class DocumentProcessor {
     sessionId: string = "default"
   ): Promise<void> {
     try {
-      // Remove document chunks from session store
-      const sessionDocuments = documentStore.get(sessionId);
-      if (sessionDocuments) {
-        sessionDocuments.delete(documentId);
-      }
+      // Get MongoDB collections
+      const { documents, metadata } = await this.getCollections();
 
-      // Remove metadata from session store
-      const sessionMetadata = documentMetadata.get(sessionId);
-      if (sessionMetadata) {
-        sessionMetadata.delete(documentId);
-      }
+      // Remove document chunks from MongoDB
+      await documents.deleteMany({
+        "metadata.documentId": documentId,
+        "metadata.sessionId": sessionId,
+      });
+
+      // Remove metadata from MongoDB
+      await metadata.deleteOne({
+        documentId,
+        sessionId,
+      });
 
       console.log(
         `Document ${documentId} cleaned up successfully from session ${sessionId}`
@@ -674,11 +666,18 @@ export class DocumentProcessor {
 
   async cleanupSession(sessionId: string): Promise<void> {
     try {
-      // Remove entire session from document store
-      documentStore.delete(sessionId);
+      // Get MongoDB collections
+      const { documents, metadata } = await this.getCollections();
 
-      // Remove entire session from metadata store
-      documentMetadata.delete(sessionId);
+      // Remove all documents for this session
+      await documents.deleteMany({
+        "metadata.sessionId": sessionId,
+      });
+
+      // Remove all metadata for this session
+      await metadata.deleteMany({
+        sessionId,
+      });
 
       console.log(`Session ${sessionId} cleaned up successfully`);
     } catch (error) {

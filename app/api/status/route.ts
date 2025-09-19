@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadConfig, makeEndpoint } from "@/lib/config";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const cfg = loadConfig();
     const endpoint = (path: string) => makeEndpoint(cfg.lm.baseUrl, path);

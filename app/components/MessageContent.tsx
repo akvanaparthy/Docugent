@@ -24,11 +24,32 @@ export function MessageContent({
     const responseMatchUnclosed = content.match(/<response>(.*?)$/s);
 
     const thinkingContent = thinkingMatch ? thinkingMatch[1].trim() : "";
-    const responseContent = responseMatch
+    let responseContent = responseMatch
       ? responseMatch[1].trim()
       : responseMatchUnclosed
       ? responseMatchUnclosed[1].trim()
       : "";
+
+    // If response tag exists but has no content (like "<response>"),
+    // extract everything before the response tag
+    if (hasResponse && !responseContent) {
+      const beforeResponse = content.split("<response>")[0].trim();
+      if (beforeResponse) {
+        responseContent = beforeResponse;
+      }
+    }
+
+    // If we still don't have response content but there's a response tag,
+    // it might be that the model just added <response> at the end
+    // In this case, treat everything before <response> as the response
+    if (hasResponse && !responseContent && !thinkingContent) {
+      const beforeResponse = content.split("<response>")[0].trim();
+      if (beforeResponse) {
+        responseContent = beforeResponse;
+      } else {
+        responseContent = content;
+      }
+    }
 
     // If we have response content but no thinking content, just show the response
     if (responseContent && !thinkingContent) {
@@ -39,6 +60,22 @@ export function MessageContent({
           }`}
         >
           {parse(responseContent)}
+        </div>
+      );
+    }
+
+    // If we have thinking content but no response content, show thinking
+    if (thinkingContent && !responseContent) {
+      return (
+        <div className="space-y-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-500 p-4 rounded-r-lg">
+            <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+              💭 Thinking Process:
+            </h4>
+            <div className="text-sm text-blue-700 dark:text-blue-300">
+              {parse(thinkingContent)}
+            </div>
+          </div>
         </div>
       );
     }
@@ -98,6 +135,28 @@ export function MessageContent({
         className={`prose prose-sm max-w-none ${isUser ? "prose-invert" : ""}`}
       >
         {parse(cleanedContent)}
+      </div>
+    );
+  }
+
+  // Final fallback for completely empty content
+  if (!cleanedContent || cleanedContent.trim().length === 0) {
+    // If we have original content but cleaned content is empty, show the original
+    if (content && content.trim().length > 0) {
+      return (
+        <div
+          className={`prose prose-sm max-w-none ${
+            isUser ? "prose-invert" : ""
+          }`}
+        >
+          {parse(content)}
+        </div>
+      );
+    }
+
+    return (
+      <div className="text-gray-500 dark:text-gray-400 italic text-sm">
+        [Empty response]
       </div>
     );
   }

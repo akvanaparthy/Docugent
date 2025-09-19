@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DocumentProcessor } from "@/lib/document-processor";
+import { MongoDocumentProcessor } from "@/lib/mongodb-document-processor";
 import { loadConfig, makeEndpoint } from "@/lib/config";
 import { getSessionIdFromRequest } from "@/lib/session";
 
@@ -89,7 +89,7 @@ async function processQuery(request: NextRequest): Promise<Response> {
     // Retrieve relevant context from the document with error handling
     let context: string;
     try {
-      const processor = new DocumentProcessor();
+      const processor = new MongoDocumentProcessor();
       context = await processor.retrieveContext(
         documentId,
         query,

@@ -14,12 +14,12 @@ declare module "mammoth" {
   }
 
   function convertToHtml(
-    buffer: Buffer | { buffer: Buffer },
-    options?: MammothOptions
+    _buffer: Buffer | { buffer: Buffer },
+    _options?: MammothOptions
   ): Promise<MammothResult>;
   function extractRawText(
-    buffer: Buffer | { buffer: Buffer },
-    options?: MammothOptions
+    _buffer: Buffer | { buffer: Buffer },
+    _options?: MammothOptions
   ): Promise<MammothResult>;
 
   export = {

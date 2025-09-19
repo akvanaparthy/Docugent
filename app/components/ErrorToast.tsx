@@ -16,16 +16,16 @@ interface ErrorToastProps {
   onRemove: (id: string) => void;
 }
 
-const Toast: React.FC<ErrorToastProps> = ({ toast, onRemove }) => {
+const Toast: React.FC<ErrorToastProps> = ({ toast, onRemove: _onRemove }) => {
   const [isVisible, setIsVisible] = useState(false);
   const showTimerRef = useRef<NodeJS.Timeout | null>(null);
   const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const onRemoveRef = useRef(onRemove);
+  const onRemoveRef = useRef(_onRemove);
 
   // Update the onRemove ref when it changes
   useEffect(() => {
-    onRemoveRef.current = onRemove;
-  }, [onRemove]);
+    onRemoveRef.current = _onRemove;
+  }, [_onRemove]);
 
   const handleRemove = useCallback(() => {
     console.log(`Manual dismiss of toast ${toast.id}`);
@@ -139,14 +139,14 @@ interface ToastContainerProps {
 
 export const ToastContainer: React.FC<ToastContainerProps> = ({
   toasts,
-  onRemove,
+  onRemove: _onRemove,
 }) => {
   if (toasts.length === 0) return null;
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">
       {toasts.map((toast) => (
-        <Toast key={toast.id} toast={toast} onRemove={onRemove} />
+        <Toast key={toast.id} toast={toast} onRemove={_onRemove} />
       ))}
     </div>
   );

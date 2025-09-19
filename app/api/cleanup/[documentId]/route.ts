@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DocumentProcessor } from "@/lib/document-processor";
+import { MongoDocumentProcessor } from "@/lib/mongodb-document-processor";
 import { getSessionIdFromRequest } from "@/lib/session";
 
 export async function DELETE(
@@ -21,7 +21,7 @@ export async function DELETE(
     }
 
     // Clean up document resources
-    const processor = new DocumentProcessor();
+    const processor = new MongoDocumentProcessor();
     await processor.cleanupDocument(documentId, sessionId);
 
     return NextResponse.json({

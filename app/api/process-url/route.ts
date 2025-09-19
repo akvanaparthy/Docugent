@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
-import { DocumentProcessor } from "@/lib/document-processor";
+import { MongoDocumentProcessor } from "@/lib/mongodb-document-processor";
 import { getSessionIdFromRequest, generateSessionId } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
@@ -315,7 +315,7 @@ export async function POST(request: NextRequest) {
 
     // Process and store the document with error handling
     try {
-      const processor = new DocumentProcessor();
+      const processor = new MongoDocumentProcessor();
       await processor.processDocument(documentId, text, url, sessionId);
     } catch (error) {
       console.error("Document processing error:", error);
