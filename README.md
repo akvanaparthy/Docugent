@@ -528,16 +528,16 @@ When your free ngrok URL changes, update Vercel's `LM_BASE_URL` automatically an
    npm i -g vercel
    ```
 
-   - Get a token from Vercel Account Settings → Tokens and set environment variables (Windows PowerShell):
+   - Get a token from Vercel Account Settings → Tokens and add to your `.env.local`:
 
-   ```powershell
-   setx VERCEL_TOKEN "YOUR_TOKEN"
-   setx VERCEL_PROJECT_ID "your-vercel-project-name-or-id"
+   ```env
+   # Add these to your .env.local file
+   VERCEL_TOKEN=your-vercel-token-here
+   VERCEL_PROJECT_ID=your-vercel-project-name-or-id
+   VERCEL_ORG_ID=your-org-or-team-id
    # Optional if in a team
-   setx VERCEL_TEAM_ID "your-team-id"
+   VERCEL_TEAM_ID=your-team-id
    ```
-
-   Restart your terminal after setting these.
 
 2. Start ngrok and your local LLM
 
@@ -560,13 +560,13 @@ Tip: Create a small `.cmd` or PowerShell script to run both commands after resta
 
 Advanced options (optional):
 
-- Set a custom ngrok API address (default `127.0.0.1:4040`):
-  ```powershell
-  setx NGROK_API_ADDR "127.0.0.1:4040"
+- Set a custom ngrok API address (default `127.0.0.1:4040`) in `.env.local`:
+  ```env
+  NGROK_API_ADDR=127.0.0.1:4040
   ```
-- If you run multiple tunnels and want to target one by name:
-  ```powershell
-  setx NGROK_TUNNEL_NAME "llm"
+- If you run multiple tunnels and want to target one by name in `.env.local`:
+  ```env
+  NGROK_TUNNEL_NAME=llm
   # then start ngrok with a named/labelled tunnel so it can be selected
   ```
 

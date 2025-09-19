@@ -3,8 +3,12 @@ const https = require("https");
 const http = require("http");
 const { execSync } = require("child_process");
 
+// Load environment variables from .env.local
+require("dotenv").config({ path: ".env.local" });
+
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN; // create a Vercel token
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID; // project id or name
+const VERCEL_ORG_ID = process.env.VERCEL_ORG_ID; // organization/team id (required with PROJECT_ID)
 const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID || undefined; // optional
 
 // Configurable ngrok local API address and optional tunnel name
@@ -79,8 +83,8 @@ function vercelRequest(path, method = "GET", body) {
 }
 
 (async () => {
-  if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID) {
-    console.error("Missing VERCEL_TOKEN or VERCEL_PROJECT_ID");
+  if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID || !VERCEL_ORG_ID) {
+    console.error("Missing VERCEL_TOKEN, VERCEL_PROJECT_ID, or VERCEL_ORG_ID");
     process.exit(1);
   }
 
@@ -118,10 +122,10 @@ function vercelRequest(path, method = "GET", body) {
 
   console.log("Updated LM_BASE_URL on Vercel");
 
-  // 4) Redeploy latest production deployment to apply env
+  // 4) Deploy to apply the new environment variable
   // Requires vercel CLI installed and logged in: npm i -g vercel
-  execSync("vercel redeploy --prod --yes", { stdio: "inherit" });
-  console.log("Triggered redeploy");
+  execSync("vercel deploy --prod", { stdio: "inherit" });
+  console.log("Triggered deployment with updated environment");
 })().catch((e) => {
   console.error(e);
   process.exit(1);
