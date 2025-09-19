@@ -1,79 +1,220 @@
 # Docugent - AI Document Assistant
 
-A full-stack application that allows users to upload documents (PDF, DOCX) or provide URLs, and then ask questions about the content using a local LLM.
+A full-stack application that allows users to upload documents (PDF, DOCX) or provide URLs, and then ask questions about the content using a local LLM with MongoDB persistence and intelligent session management.
 
-## Features
+## ✨ Features
 
-- **Document Upload**: Support for PDF and DOCX files
-- **URL Processing**: Extract content from web pages
-- **AI-Powered Q&A**: Ask questions about uploaded documents using local LLM
+### 📄 Document Processing
+
+- **File Upload**: Support for PDF and DOCX files (up to 10MB)
+- **URL Processing**: Extract and process content from web pages
+- **Smart Text Extraction**: Advanced HTML parsing with content filtering
+- **Document Chunking**: Intelligent text splitting for optimal processing
+
+### 🤖 AI-Powered Q&A
+
+- **Local LLM Integration**: Works with any OpenAI-compatible API (LM Studio, Ollama, etc.)
 - **RAG Implementation**: Retrieval-Augmented Generation for accurate, context-aware responses
-- **Modern UI**: Clean, responsive interface built with Next.js and Tailwind CSS
+- **Text-Based Similarity**: Efficient document search without requiring embedding models
+- **Context-Aware Responses**: AI answers based only on document content
 
-## Tech Stack
+### 💾 Data Management
+
+- **MongoDB Persistence**: Documents stored in MongoDB Atlas for reliability
+- **Session Management**: Multi-user support with session isolation
+- **Automatic Cleanup**: Smart session cleanup on page unload and chat deletion
+- **Document Management**: Easy document deletion and cleanup
+
+### 🎨 User Experience
+
+- **Modern UI**: Clean, responsive interface built with Next.js and Tailwind CSS
+- **Dark Mode**: Toggle between light and dark themes
+- **Real-time Status**: Live model status monitoring
+- **Error Handling**: Comprehensive error handling with user-friendly messages
+- **Mobile Responsive**: Works seamlessly on all device sizes
+
+## 🛠 Tech Stack
 
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes
-- **AI**: Local LLM (OpenAI-compatible API, e.g., LM Studio)
+- **Database**: MongoDB Atlas
+- **AI**: Local LLM (OpenAI-compatible API)
 - **File Processing**: pdf-parse, mammoth
-- **Deployment**: Vercel (or any Node.js hosting)
+- **Deployment**: Vercel-ready
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Local LLM server running (e.g., LM Studio, Ollama, or any OpenAI-compatible API)
-- LLM server accessible at `http://127.0.0.1:1234/v1` (or configure your own URL)
+- MongoDB Atlas account (or local MongoDB)
+- Local LLM server running (e.g., LM Studio, Ollama)
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the repository:**
 
 ```bash
 git clone <your-repo-url>
 cd docugent
 ```
 
-2. Install dependencies:
+2. **Install dependencies:**
 
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
+3. **Set up environment variables:**
 
 ```bash
 cp env.example .env.local
 ```
 
-Edit `.env.local` and configure your local LLM settings:
+4. **Configure your environment:**
+   Edit `.env.local` with your settings:
 
-```
+```env
+# MongoDB Configuration
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DATABASE=your-database-name
+
+# LM Studio Configuration
 LM_BASE_URL=http://127.0.0.1:1234/v1
 LM_API_KEY=lmstudio
-LM_MODEL=dolphin-2.9.3-mistral-nemo-12b-llamacppfixed
+LM_MODEL=dolphin-2.9.3-mistral-nemo-12b-llamacppfixed:2
+
+# Optional Settings
+DISABLE_EMBEDDINGS=true  # Set to true for models that don't support embeddings
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ### Local LLM Setup
 
-This application works with any OpenAI-compatible API. Popular options include:
+This application works with any OpenAI-compatible API. Popular options:
 
-- **LM Studio**: Easy-to-use GUI for running local models
-- **Ollama**: Command-line tool for running local models
+#### LM Studio (Recommended)
+
+1. Download and install [LM Studio](https://lmstudio.ai/)
+2. Load a model (e.g., dolphin-2.9.3-mistral-nemo-12b)
+3. Start the local server
+4. Ensure it's running on `http://127.0.0.1:1234`
+
+#### Other Options
+
+- **Ollama**: `ollama serve`
 - **Text Generation WebUI**: Web interface for running models
 - **vLLM**: High-performance inference server
 
-**Benefits of Local LLM**:
+### 🌐 Exposing Local LLM with ngrok
 
-- **Privacy**: Your documents never leave your machine
-- **Cost**: No API costs after initial setup
-- **Control**: Full control over model selection and configuration
-- **Offline**: Works without internet connection
+If you want to deploy your app to Vercel or other cloud platforms while keeping your LLM local, you can use ngrok to expose your local LLM server to the internet.
 
-### Local Development
+#### Step 1: Install ngrok
 
-Run the development server:
+1. **Download ngrok** from [ngrok.com](https://ngrok.com/download)
+2. **Sign up** for a free account to get your auth token
+3. **Authenticate** ngrok:
+   ```bash
+   ngrok config add-authtoken YOUR_AUTH_TOKEN
+   ```
+
+#### Step 2: Start Your Local LLM
+
+1. **Start LM Studio** and load your model
+2. **Ensure it's running** on `http://127.0.0.1:1234`
+
+#### Step 3: Expose with ngrok
+
+```bash
+ngrok http 1234
+```
+
+This will output something like:
+
+```
+Session Status                online
+Account                       your-email@example.com
+Version                       3.x.x
+Region                        United States (us)
+Latency                       -
+Web Interface                 http://127.0.0.1:4040
+Forwarding                    https://abc123.ngrok-free.app -> http://localhost:1234
+```
+
+#### Step 4: Update Environment Variables
+
+Replace your local LLM configuration with the ngrok URL:
+
+**For Development (.env.local):**
+
+```env
+# Replace with your ngrok URL
+LM_BASE_URL=https://abc123.ngrok-free.app/v1
+LM_API_KEY=lmstudio
+LM_MODEL=dolphin-2.9.3-mistral-nemo-12b-llamacppfixed:2
+```
+
+**For Production (Vercel Environment Variables):**
+
+```env
+LM_BASE_URL=https://abc123.ngrok-free.app/v1
+LM_API_KEY=lmstudio
+LM_MODEL=dolphin-2.9.3-mistral-nemo-12b-llamacppfixed:2
+```
+
+#### Step 5: Test the Connection
+
+```bash
+# Test if your ngrok URL is accessible
+curl https://abc123.ngrok-free.app/v1/models
+```
+
+#### Important Notes
+
+⚠️ **Security Considerations:**
+
+- **Free ngrok URLs change** every time you restart ngrok
+- **Consider ngrok Pro** for static domains
+- **Your LLM is publicly accessible** - use authentication if needed
+- **Monitor usage** to avoid hitting rate limits
+
+🔄 **Keeping ngrok Running:**
+
+- **Keep ngrok running** while your app is deployed
+- **Use a process manager** like PM2 for production:
+  ```bash
+  npm install -g pm2
+  pm2 start "ngrok http 1234" --name ngrok-llm
+  ```
+
+📝 **Alternative: Static ngrok Domain (Pro)**
+
+```bash
+# With ngrok Pro, you can use a static domain
+ngrok http 1234 --domain=your-static-domain.ngrok.io
+```
+
+#### Troubleshooting ngrok
+
+**Common Issues:**
+
+- **"Tunnel not found"**: Restart ngrok and update your environment variables
+- **"Connection refused"**: Ensure your local LLM server is running
+- **"Rate limit exceeded"**: Upgrade to ngrok Pro or wait for reset
+- **"Invalid host header"**: Add `--host-header=rewrite` flag:
+  ```bash
+  ngrok http 1234 --host-header=rewrite
+  ```
+
+### MongoDB Setup
+
+1. **Create MongoDB Atlas account** at [mongodb.com](https://www.mongodb.com/atlas)
+2. **Create a cluster** (free tier available)
+3. **Get connection string** and add to `.env.local`
+4. **Create database** with your preferred name
+
+### Development
 
 ```bash
 npm run dev
@@ -81,61 +222,93 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Deployment
+## ⚙️ Configuration
 
-### Local Development
+### Environment Variables
 
-1. Start your local LLM server (e.g., LM Studio)
-2. Ensure it's accessible at the configured URL
-3. Run the development server:
+| Variable              | Description                  | Required | Default                                          |
+| --------------------- | ---------------------------- | -------- | ------------------------------------------------ |
+| `MONGODB_URI`         | MongoDB connection string    | Yes      | -                                                |
+| `MONGODB_DATABASE`    | MongoDB database name        | Yes      | -                                                |
+| `LM_BASE_URL`         | Local LLM server URL         | Yes      | `http://127.0.0.1:1234/v1`                       |
+| `LM_API_KEY`          | API key for LLM server       | No       | `lmstudio`                                       |
+| `LM_MODEL`            | Model name/ID                | Yes      | `dolphin-2.9.3-mistral-nemo-12b-llamacppfixed:2` |
+| `DISABLE_EMBEDDINGS`  | Disable embedding generation | No       | `true`                                           |
+| `NEXT_PUBLIC_APP_URL` | Public app URL               | No       | `http://localhost:3000`                          |
 
-```bash
-npm run dev
+### Model Configuration
+
+#### For Chat Models (Recommended)
+
+```env
+DISABLE_EMBEDDINGS=true
+LM_MODEL=dolphin-2.9.3-mistral-nemo-12b-llamacppfixed:2
 ```
 
-### Production Deployment
+#### For Embedding Models
 
-This application can be deployed to any Node.js hosting platform:
+```env
+DISABLE_EMBEDDINGS=false
+LM_MODEL=text-embedding-3-small
+```
 
-- **Vercel**: Easy deployment with automatic builds
-- **Railway**: Simple deployment with environment variables
-- **Render**: Free tier available
-- **DigitalOcean App Platform**: Scalable hosting
-- **Self-hosted**: Run on your own server
+## 🏗 Architecture
 
-**Note**: For production deployment, you'll need to ensure your local LLM server is accessible from your hosting platform, or use a cloud-based LLM service.
+### Document Processing Pipeline
 
-## Environment Variables
+```mermaid
+graph TD
+    A[Document Upload/URL] --> B[Text Extraction]
+    B --> C[Text Chunking]
+    C --> D[Storage in MongoDB]
+    D --> E[User Query]
+    E --> F[Similarity Search]
+    F --> G[Context Retrieval]
+    G --> H[LLM Response Generation]
+    H --> I[Response to User]
+```
 
-| Variable              | Description                   | Required | Default                    |
-| --------------------- | ----------------------------- | -------- | -------------------------- |
-| `LM_BASE_URL`         | Base URL for local LLM server | Yes      | `http://127.0.0.1:1234/v1` |
-| `LM_API_KEY`          | API key for local LLM         | No       | `lmstudio`                 |
-| `LM_MODEL`            | Model name/label              | Yes      | `dolphin-2.9.3-mistral...` |
-| `NEXT_PUBLIC_APP_URL` | Public URL of your app        | No       | `http://localhost:3000`    |
+### RAG Implementation
 
-## API Endpoints
+1. **Document Processing**: Extract and chunk text from documents
+2. **Storage**: Store chunks in MongoDB with metadata
+3. **Query Processing**: Process user questions
+4. **Similarity Search**: Find relevant document chunks using text-based similarity
+5. **Context Assembly**: Combine relevant chunks into context
+6. **Response Generation**: Generate answers using local LLM with context
 
-### POST `/api/upload`
+### Session Management
+
+- **Session Isolation**: Each user session is isolated
+- **Automatic Cleanup**: Sessions clean up when users leave
+- **MongoDB Storage**: Persistent storage across server restarts
+- **Multi-user Support**: Multiple concurrent users supported
+
+## 📡 API Endpoints
+
+### Document Management
+
+#### `POST /api/upload`
 
 Upload and process a document file.
 
-**Body**: FormData with `file` field
+**Request**: FormData with `file` field
 **Response**:
 
 ```json
 {
   "success": true,
   "documentId": "uuid",
+  "sessionId": "uuid",
   "message": "Document processed successfully"
 }
 ```
 
-### POST `/api/process-url`
+#### `POST /api/process-url`
 
 Process content from a URL.
 
-**Body**:
+**Request**:
 
 ```json
 {
@@ -149,15 +322,46 @@ Process content from a URL.
 {
   "success": true,
   "documentId": "uuid",
+  "sessionId": "uuid",
   "message": "URL processed successfully"
 }
 ```
 
-### POST `/api/query`
+#### `DELETE /api/cleanup/[documentId]`
+
+Delete a specific document.
+
+**Headers**: `x-session-id: your-session-id`
+**Response**:
+
+```json
+{
+  "success": true,
+  "message": "Document cleaned up successfully"
+}
+```
+
+#### `DELETE /api/cleanup-session`
+
+Delete all documents in a session.
+
+**Headers**: `x-session-id: your-session-id`
+**Response**:
+
+```json
+{
+  "success": true,
+  "message": "Session cleaned up successfully"
+}
+```
+
+### Query & Status
+
+#### `POST /api/query`
 
 Ask questions about processed documents.
 
-**Body**:
+**Request**:
 
 ```json
 {
@@ -166,6 +370,7 @@ Ask questions about processed documents.
 }
 ```
 
+**Headers**: `x-session-id: your-session-id`
 **Response**:
 
 ```json
@@ -176,61 +381,257 @@ Ask questions about processed documents.
 }
 ```
 
-## Architecture
+#### `GET /api/status`
 
-### Document Processing Pipeline
+Check LLM server status.
 
-1. **File Upload/URL Processing**: Extract text from PDF, DOCX, or web pages
-2. **Text Chunking**: Split large documents into manageable chunks
-3. **Embedding Generation**: Create vector embeddings for each chunk
-4. **Storage**: Store chunks and embeddings (in-memory for demo)
-5. **Query Processing**: Generate embeddings for user queries
-6. **Similarity Search**: Find most relevant chunks
-7. **Response Generation**: Use RAG to generate contextual answers
+**Response**:
 
-### RAG Implementation
+```json
+{
+  "status": "online",
+  "message": "LM Studio server is running",
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
 
-The application uses Retrieval-Augmented Generation (RAG) to provide accurate answers:
+## 🚀 Deployment
 
-1. User query is embedded using the local LLM's embedding model
-2. Similarity search finds relevant document chunks
-3. Context is combined with the query
-4. Local LLM generates a response based on the context
+### Vercel Deployment
 
-## Local LLM Features
+1. **Connect your repository** to Vercel
+2. **Set environment variables** in Vercel dashboard
+3. **Deploy** - Vercel will handle the build automatically
 
-This application is designed to work with local LLMs:
+### Environment Variables for Production
 
-- **Privacy-First**: All processing happens locally
-- **Cost-Effective**: No ongoing API costs
-- **Customizable**: Use any model that fits your needs
-- **Offline Capable**: Works without internet connection
+#### Option 1: Cloud LLM Service
 
-## Limitations
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DATABASE=your-production-database
+LM_BASE_URL=https://your-llm-server.com/v1
+LM_API_KEY=your-api-key
+LM_MODEL=your-model-name
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+```
 
-- **In-Memory Storage**: Document storage is currently in-memory and will reset on deployment
-- **File Size Limits**: 10MB limit for file uploads
+#### Option 2: Local LLM with ngrok
+
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DATABASE=your-production-database
+LM_BASE_URL=https://your-ngrok-url.ngrok-free.app/v1
+LM_API_KEY=lmstudio
+LM_MODEL=dolphin-2.9.3-mistral-nemo-12b-llamacppfixed:2
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+```
+
+### 🚀 Deployment with Local LLM + ngrok
+
+If you want to keep your LLM running locally while deploying your app to the cloud:
+
+#### Prerequisites
+
+- Local LLM server running (LM Studio, Ollama, etc.)
+- ngrok installed and configured
+- MongoDB Atlas account
+
+#### Step-by-Step Deployment
+
+1. **Start your local LLM server:**
+
+   ```bash
+   # Start LM Studio or your preferred LLM server
+   # Ensure it's running on http://127.0.0.1:1234
+   ```
+
+2. **Expose with ngrok:**
+
+   ```bash
+   ngrok http 1234
+   ```
+
+3. **Copy the ngrok URL** (e.g., `https://abc123.ngrok-free.app`)
+
+4. **Deploy to Vercel:**
+
+   - Connect your GitHub repository to Vercel
+   - Set environment variables in Vercel dashboard:
+     ```
+     MONGODB_URI=mongodb+srv://...
+     MONGODB_DATABASE=your-database
+     LM_BASE_URL=https://abc123.ngrok-free.app/v1
+     LM_API_KEY=lmstudio
+     LM_MODEL=your-model-name
+     ```
+
+5. **Keep ngrok running:**
+   ```bash
+   # Use PM2 to keep ngrok running in production
+   npm install -g pm2
+   pm2 start "ngrok http 1234" --name ngrok-llm
+   pm2 save
+   pm2 startup
+   ```
+
+#### Benefits of This Setup
+
+- ✅ **Cost-effective**: No cloud LLM costs
+- ✅ **Privacy**: Your data stays local
+- ✅ **Control**: Full control over your model
+- ✅ **Flexibility**: Easy to switch models
+
+#### Considerations
+
+- ⚠️ **Reliability**: Your local machine must stay online
+- ⚠️ **URL Changes**: Free ngrok URLs change on restart
+- ⚠️ **Bandwidth**: Uses your internet connection
+- ⚠️ **Security**: LLM is publicly accessible
+
+### Other Deployment Options
+
+- **Railway**: Simple deployment with environment variables
+- **Render**: Free tier available
+- **DigitalOcean App Platform**: Scalable hosting
+- **Self-hosted**: Run on your own server
+
+## 🔧 Utilities
+
+### Cleanup Scripts
+
+#### Clean All Documents
+
+```bash
+node scripts/cleanup-all-documents.js
+```
+
+#### Test MongoDB Connection
+
+```bash
+npm run test-mongodb
+```
+
+#### Test LLM Connection
+
+```bash
+npm run test-llm
+```
+
+## 🎯 How It Works
+
+### 1. Document Upload
+
+- User uploads PDF/DOCX or provides URL
+- System extracts text content
+- Text is split into manageable chunks
+- Chunks are stored in MongoDB with metadata
+
+### 2. Query Processing
+
+- User asks a question
+- System searches for relevant document chunks
+- Context is assembled from relevant chunks
+- LLM generates response based on context
+
+### 3. Session Management
+
+- Each user gets a unique session ID
+- Documents are isolated per session
+- Automatic cleanup when users leave
+- Persistent storage in MongoDB
+
+### 4. Text-Based Similarity
+
+- Uses word frequency analysis for similarity
+- No embedding models required
+- Works with any chat model
+- Fast and efficient search
+
+## 🔒 Privacy & Security
+
+- **Local Processing**: All AI processing happens locally
+- **No Data Sharing**: Documents never leave your infrastructure
+- **Session Isolation**: User data is completely isolated
+- **Automatic Cleanup**: Data is cleaned up when no longer needed
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### "No models loaded" Error
+
+- Ensure your LLM server is running
+- Check that the model is loaded in LM Studio
+- Verify the model name in configuration
+
+#### MongoDB Connection Issues
+
+- Check your MongoDB URI
+- Ensure network access is configured
+- Verify database name is correct
+
+#### Empty Responses
+
+- Check if embeddings are disabled for your model
+- Verify document processing completed successfully
+- Check browser console for errors
+
+### Debug Commands
+
+```bash
+# Test LLM connection
+npm run test-llm
+
+# Test MongoDB connection
+npm run test-mongodb
+
+# Check application status
+curl http://localhost:3000/api/status
+```
+
+## 🚧 Limitations
+
+- **File Size**: 10MB limit for file uploads
 - **Processing Time**: Large documents may take time to process
-- **Local LLM Dependency**: Requires a local LLM server to be running
+- **Model Dependency**: Requires a local LLM server
+- **Memory Usage**: Large documents consume more memory
 
-## Future Enhancements
+## 🔮 Future Enhancements
 
-- [ ] Persistent vector database (Pinecone, Weaviate)
-- [ ] User authentication and document management
-- [ ] Support for more file formats
-- [ ] Batch processing for multiple documents
-- [ ] Advanced search and filtering
-- [ ] Document summarization
-- [ ] Export functionality
+- [ ] **Vector Database**: Integration with Pinecone/Weaviate
+- [ ] **User Authentication**: Login and user management
+- [ ] **More File Formats**: Support for additional document types
+- [ ] **Batch Processing**: Process multiple documents at once
+- [ ] **Advanced Search**: Full-text search capabilities
+- [ ] **Document Summarization**: Automatic document summaries
+- [ ] **Export Functionality**: Export conversations and documents
+- [ ] **API Rate Limiting**: Protect against abuse
+- [ ] **Caching**: Improve response times
+- [ ] **Analytics**: Usage tracking and insights
 
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Make your changes
 4. Test thoroughly
-5. Submit a pull request
+5. Commit your changes: `git commit -m 'Add amazing feature'`
+6. Push to the branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
 
-## License
+## 📄 License
 
-MIT License - see LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [LM Studio](https://lmstudio.ai/) for local LLM hosting
+- [MongoDB](https://www.mongodb.com/) for database services
+- [Next.js](https://nextjs.org/) for the framework
+- [Tailwind CSS](https://tailwindcss.com/) for styling
+- [Vercel](https://vercel.com/) for deployment platform
+
+---
+
+**Made with ❤️ for the open-source community**
