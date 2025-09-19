@@ -686,8 +686,8 @@ export default function Home() {
       {/* Sidebar */}
       <div
         className={`${
-          showSidebar ? "w-64" : "w-0"
-        } transition-all duration-300 bg-slate-800 dark:bg-slate-900 text-white overflow-hidden`}
+          showSidebar ? "w-64 md:w-64" : "w-0"
+        } transition-all duration-300 bg-slate-800 dark:bg-slate-900 text-white overflow-hidden fixed md:relative z-40 h-full`}
       >
         <div className="p-4">
           <div className="flex items-center justify-between mb-6">
@@ -740,7 +740,7 @@ export default function Home() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col md:ml-0">
         {/* Header */}
         <div className="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 flex items-center justify-between transition-all duration-300">
           <div className="flex items-center space-x-3">
@@ -750,7 +750,7 @@ export default function Home() {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
               {activeChat?.title || "Docugent"}
             </h1>
           </div>
@@ -773,7 +773,7 @@ export default function Home() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 bg-white dark:bg-slate-800 transition-all duration-300">
+        <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-6 bg-white dark:bg-slate-800 transition-all duration-300">
           <div className="max-w-3xl mx-auto space-y-6">
             {!activeChat && (
               <div className="text-center py-12">
@@ -816,7 +816,7 @@ export default function Home() {
                     message.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
-                  <div className="flex items-start space-x-3 max-w-[80%]">
+                  <div className="flex items-start space-x-3 max-w-[85%] sm:max-w-[80%]">
                     {message.role === "assistant" && (
                       <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                         <Bot className="h-4 w-4 text-white" />
@@ -886,7 +886,7 @@ export default function Home() {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 transition-all duration-300">
+        <div className="border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 sm:px-4 py-4 transition-all duration-300">
           <div className="max-w-3xl mx-auto">
             {!activeChat?.documentId && activeChat && (
               <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -1000,8 +1000,8 @@ export default function Home() {
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-all duration-300">
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4 transition-all duration-300 transform scale-100">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-all duration-300 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6 w-full max-w-md transition-all duration-300 transform scale-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Upload Document or URL
@@ -1074,8 +1074,8 @@ export default function Home() {
 
       {/* Delete Chat Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-all duration-300">
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4 transition-all duration-300 transform scale-100">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-all duration-300 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6 w-full max-w-md transition-all duration-300 transform scale-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Maximum Chats Reached
