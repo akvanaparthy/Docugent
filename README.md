@@ -518,6 +518,60 @@ npm run test-mongodb
 npm run test-llm
 ```
 
+### Vercel + ngrok Auto-Update Script
+
+When your free ngrok URL changes, update Vercel's `LM_BASE_URL` automatically and redeploy:
+
+1. Install Vercel CLI and create a token
+
+   ```bash
+   npm i -g vercel
+   ```
+
+   - Get a token from Vercel Account Settings → Tokens and set environment variables (Windows PowerShell):
+
+   ```powershell
+   setx VERCEL_TOKEN "YOUR_TOKEN"
+   setx VERCEL_PROJECT_ID "your-vercel-project-name-or-id"
+   # Optional if in a team
+   setx VERCEL_TEAM_ID "your-team-id"
+   ```
+
+   Restart your terminal after setting these.
+
+2. Start ngrok and your local LLM
+
+   ```bash
+   ngrok http 1234
+   ```
+
+3. Run the updater
+   ```bash
+   node scripts/update-vercel-ngrok.js
+   ```
+
+What it does:
+
+- Reads current public URL from `http://127.0.0.1:4040/api/tunnels`
+- Sets Vercel env `LM_BASE_URL` to `<ngrok_url>/v1` for all targets
+- Triggers a production redeploy so the change takes effect
+
+Tip: Create a small `.cmd` or PowerShell script to run both commands after restarting ngrok.
+
+Advanced options (optional):
+
+- Set a custom ngrok API address (default `127.0.0.1:4040`):
+  ```powershell
+  setx NGROK_API_ADDR "127.0.0.1:4040"
+  ```
+- If you run multiple tunnels and want to target one by name:
+  ```powershell
+  setx NGROK_TUNNEL_NAME "llm"
+  # then start ngrok with a named/labelled tunnel so it can be selected
+  ```
+
+Why port 4040? ngrok exposes a local inspector/API at `http://127.0.0.1:4040` that lists current tunnels. The script reads this to discover the current public URL, so it works on any PC that runs ngrok—no hardcoded URL needed.
+
 ## 🎯 How It Works
 
 ### 1. Document Upload
